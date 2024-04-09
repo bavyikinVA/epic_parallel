@@ -19,7 +19,7 @@ double** morlet_wavelet(double* data, int data_size, double* weight, int weight_
         double* coefRow = (double*)malloc(data_size * sizeof(double));
         omp_set_num_threads(4);
         #pragma omp parallel for schedule(static)
-            for (int j = 1; j < data_size; j++) 
+            for (int j = 0; j < data_size; j++) 
             {
                 double w0 = 0;
                 for (int k = 1; k < data_size; k++) {
