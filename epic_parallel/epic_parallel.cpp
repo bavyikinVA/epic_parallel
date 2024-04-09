@@ -8,17 +8,19 @@
 #include <string>
 #include <iostream>
 
-#define DATA_SIZE 1001
-#define WEIGHT_SIZE 100
-
-double** morlet_wavelet(double* data, int data_size, double* weight, int weight_size) 
+double** morlet_wavelet(double** data, int data_rows, int data_cols, double* weight, int weight_size) 
 {    
-    double** coef = (double**)malloc(weight_size * sizeof(double*));
-    for (int i = 0; i < weight_size; i++) {
-        coef[i] = (double*)malloc(data_size * sizeof(double));
-        double* coefRow = (double*)malloc(data_size * sizeof(double));
-        omp_set_num_threads(4);
-        #pragma omp parallel for schedule(static)
+    //double** coef = (double**)malloc(weight_size * sizeof(double*));
+    double*** result_matrix = new double** [weight_size * data_cols * data_cols];
+    for (int i = 0; i < weight_size; i++) 
+    {
+        double** coef = new double*[weight_size];
+        for (int l = 0; l < data_rows; l++) 
+        {
+            coef[i] = new double*[data_size];
+            double* coefRow = new double[data_size];
+            //omp_set_num_threads(4);
+            //#pragma omp parallel for schedule(static)
             for (int j = 0; j < data_size; j++) 
             {
                 double w0 = 0;
@@ -36,24 +38,78 @@ double** morlet_wavelet(double* data, int data_size, double* weight, int weight_
 }
 
 int main() {
-    std::ifstream fin("C:\\Users\\bavyk\\source\\repos\\epic_parallel\\epic_parallel\\delta_.txt");
-    int size = 1001;
-    double delta[1001] = {};
-    //delta[501] = {1.0};
-    // Reading the array elements from the file 
-    for (int i = 0; i < size; i++)
+    std::string input_path;
+    std::cout << "Enter file path:" << std::endl;
+
+    std::cin >> input_path;
+    std::cout << std::endl;
+
+    for (size_t i = 0; i < input_path.length(); ++i) 
     {
-        fin >> delta[i];
+        if (input_path[i] == '/' || input_path[i] == '\\') {
+            input_path.replace(i, 1, "\\\\");
+            ++i;
+        }
+    }
+
+    std::ifstream fin(input_path);
+    if (!fin.is_open()) 
+    {
+        std::cerr << "Error opening file: " << input_path << std::endl;
+        return 1;
+    }
+
+    int rows = 0;
+    int cols = 0;
+
+    // Read matrix dimensions
+    fin >> rows >> cols;
+
+    double** matrix = new double* [rows];
+    for (int i = 0; i < rows; ++i) {
+        matrix[i] = new double[cols];
+    }
+
+    // Read matrix elements
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            fin >> matrix[i][j];
+        }
     }
     fin.close();
-    double widths[WEIGHT_SIZE] = {};
+
+    std::cout << "select an option: 1 - list of wavelet transform scales, 2 - interval of the wavelet transform scale:" << std::endl;
+    int selector;
+    int iter = 0;
+    double* wavelet_scales = new double[1];
+    std::cin >> selector;
+    if (selector == 1) 
+    {
+        std::cout << "Enter the number of items:" << std::endl;
+        std::cin >> iter;
+        double* scales2 = new double[iter];
+        for (int i = 0; i < iter; i++)
+        {
+            std::cin >> scales2[i];
+
+        }
+        wavelet_scales = new double[iter];
+        for (int i = 0; i < iter; i++) 
+        {
+            wavelet_scales[i] = scales2[i];
+        }
+    }
+
+
+
+    /*double widths[] = {}
     for (int i = 0; i < WEIGHT_SIZE; ++i) {
         widths[i] = i + 1;
-    }
+    }*/
 
     double time = (double)clock() / CLOCKS_PER_SEC;
     printf("start_morlet");
-    double** result = morlet_wavelet(delta, DATA_SIZE, widths, WEIGHT_SIZE);
+    double** result = morlet_wavelet(matrix, rows, cols, wavelets_scales, iter);
     double time_diff = (((double)clock()) / CLOCKS_PER_SEC) - time;
 
     std::ofstream fout("C:\\Users\\bavyk\\source\\repos\\epic_parallel\\epic_parallel\\test.txt");
